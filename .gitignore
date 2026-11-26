@@ -8,3 +8,7 @@ dist/
 runs/
 !runs/.gitkeep
 testdata/out/
+
+# Local bootstrap scripts — not part of the project
+/build.py
+/build[0-9]*.py
