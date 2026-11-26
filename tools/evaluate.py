@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Compare reconciliation.xlsx against expected.json."""
+"""Compare reconciliation.xlsx against expected.json (full field match)."""
 import json
 import sys
 from pathlib import Path
@@ -14,20 +14,43 @@ def load_actual(xlsx: Path) -> dict:
     return {r[0]: {"rule": r[1], "status": r[2], "reason": r[3]} for r in rows}
 
 
+def load_deviations(xlsx: Path) -> dict:
+    wb = load_workbook(xlsx)
+    ws = wb["Отклонения"]
+    rows = list(ws.iter_rows(min_row=2, values_only=True))
+    # Row is index 0 in excel. Actual row number is idx + 2
+    return {i + 2: {
+        "norm_cons": r[4], "norm_amt": r[5],
+        "dev_kwh": r[7], "dev_rub": r[9]
+    } for i, r in enumerate(rows)}
+
+
 def main(result_xlsx: str, expected_json: str) -> int:
-    actual = load_actual(Path(result_xlsx))
+    actual_log = load_actual(Path(result_xlsx))
+    actual_dev = load_deviations(Path(result_xlsx))
     expected = json.loads(Path(expected_json).read_text(encoding="utf-8"))
     ok = 0
     total = len(expected)
     mismatches = []
     for e in expected:
-        a = actual.get(e["row"], {})
-        if a.get("status") == e["status"] and a.get("rule") == e["rule"]:
+        a_log = actual_log.get(e["row"], {})
+        a_dev = actual_dev.get(e["row"], {})
+
+        match = (a_log.get("status") == e["status"] and a_log.get("rule") == e["rule"])
+        if "norm" in e:
+            match = match and (a_dev.get("norm_cons") == e["norm"])
+            match = match and (a_dev.get("norm_amt") == e["sum"])
+        if "dev_kwh" in e:
+            match = match and (a_dev.get("dev_kwh") == e["dev_kwh"])
+            match = match and (a_dev.get("dev_rub") == e["dev_rub"])
+
+        if match:
             ok += 1
         else:
-            mismatches.append((e["row"], e["status"], a.get("status")))
-    for row, exp, got in mismatches:
-        print(f"  row {row}: expected {exp}, got {got}")
+            mismatches.append(e["row"])
+
+    for row in mismatches:
+        print(f"  mismatch at row {row}")
     print(f"accuracy: {ok}/{total} = {ok / total * 100:.2f}%")
     return 0 if ok == total else 1
 
