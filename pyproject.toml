@@ -1,6 +1,6 @@
 [project]
 name = "gigacowork-electricity-audit-agent"
-version = "0.1.0"
+version = "0.2.0"
 requires-python = ">=3.11"
 description = "Deterministic reconciliation of electricity charges against norms"
 
