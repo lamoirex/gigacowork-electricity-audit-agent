@@ -1,0 +1,8 @@
+{
+  "threshold_percent": 10.0,
+  "compare_vat": false,
+  "allowed_units": {
+    "consumption": ["кВт·ч", "kWh", "квтч", "кВт*ч"],
+    "amount": ["руб.", "rub", "руб"]
+  }
+}
