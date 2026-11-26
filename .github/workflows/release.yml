@@ -2,6 +2,8 @@ name: release
 on:
   push:
     tags: ["v*"]
+permissions:
+  contents: write
 jobs:
   release:
     runs-on: ubuntu-latest
@@ -13,4 +15,4 @@ jobs:
       - run: pytest -q
       - run: python build_skill.py
       - uses: softprops/action-gh-release@v2
-        with: { files: dist/utility-check.zip }
+        with: { files: "dist/*.zip" }
