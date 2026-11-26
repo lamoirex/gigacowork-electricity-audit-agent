@@ -1,6 +1,0 @@
-services:
-  utility-check:
-    build: .
-    volumes:
-      - ./testdata/out:/data
-    command: ["/data/charges.xlsx", "/data/norms.xlsx", "/data/stores.xlsx", "/data"]
