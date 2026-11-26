@@ -1,0 +1,15 @@
+[project]
+name = "gigacowork-electricity-audit-agent"
+version = "0.1.0"
+requires-python = ">=3.11"
+description = "Deterministic reconciliation of electricity charges against norms"
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
