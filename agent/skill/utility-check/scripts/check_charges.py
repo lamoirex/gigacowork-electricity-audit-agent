@@ -19,7 +19,7 @@ HERE = Path(__file__).resolve().parent.parent
 SYN = json.loads((HERE / "references" / "column_synonyms.json").read_text(encoding="utf-8"))
 PARAMS = json.loads((HERE / "references" / "params.json").read_text(encoding="utf-8"))
 THRESHOLD = float(PARAMS["threshold_percent"])
-ALLOWED_UNITS = set(PARAMS["allowed_units"]["consumption"])
+ALLOWED_UNITS = {u.strip().lower() for u in PARAMS["allowed_units"]["consumption"]}
 
 
 def norm_header(h: Any) -> str:

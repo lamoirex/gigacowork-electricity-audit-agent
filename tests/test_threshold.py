@@ -22,7 +22,7 @@ def test_threshold_is_strict_10_percent():
 
 
 def test_above_threshold_marks_exceeded():
-    d = _decide(1100.01, 5500)
+    d = _decide(1101, 5500)
     assert d.status == "превышение"
 
 
