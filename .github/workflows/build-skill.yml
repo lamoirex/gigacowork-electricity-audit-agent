@@ -10,5 +10,5 @@ jobs:
       - run: pip install -r requirements-dev.txt
       - run: pytest -q
       - run: python build_skill.py
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with: { name: utility-check, path: dist/utility-check.zip }

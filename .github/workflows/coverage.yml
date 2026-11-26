@@ -10,5 +10,5 @@ jobs:
         with: { python-version: "3.12" }
       - run: pip install -r requirements-dev.txt pytest-cov
       - run: pytest --cov=agent --cov-report=xml
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with: { name: coverage, path: coverage.xml }
