@@ -1,4 +1,5 @@
 """Input validation."""
+
 from pathlib import Path
 
 

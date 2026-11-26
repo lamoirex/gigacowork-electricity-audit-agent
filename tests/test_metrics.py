@@ -4,8 +4,14 @@ from pathlib import Path
 
 
 def _load():
-    p = (Path(__file__).resolve().parent.parent
-         / "agent" / "skill" / "utility-check" / "scripts" / "metrics.py")
+    p = (
+        Path(__file__).resolve().parent.parent
+        / "agent"
+        / "skill"
+        / "utility-check"
+        / "scripts"
+        / "metrics.py"
+    )
     spec = importlib.util.spec_from_file_location("metrics", str(p))
     m = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(m)

@@ -5,21 +5,41 @@ def _minimal_ctx():
     cc = load_engine()
     stores = [{"store_id": "S01"}, {"store_id": "S02"}]
     norms = [
-        {"store_id": "S01", "period": "2025-01", "norm_consumption": 1000,
-         "norm_unit": "кВт·ч", "norm_amount": 5000, "version": 1,
-         "valid_from": "2024-01-01"},
-        {"store_id": "S01", "period": "2025-01", "norm_consumption": 900,
-         "norm_unit": "кВт·ч", "norm_amount": 4500, "version": 2,
-         "valid_from": "2025-01-01"},
+        {
+            "store_id": "S01",
+            "period": "2025-01",
+            "norm_consumption": 1000,
+            "norm_unit": "кВт·ч",
+            "norm_amount": 5000,
+            "version": 1,
+            "valid_from": "2024-01-01",
+        },
+        {
+            "store_id": "S01",
+            "period": "2025-01",
+            "norm_consumption": 900,
+            "norm_unit": "кВт·ч",
+            "norm_amount": 4500,
+            "version": 2,
+            "valid_from": "2025-01-01",
+        },
     ]
     return cc, stores, norms
 
 
 def _row(**kw):
-    base = {"__row__": 2, "store_id": "S01", "period": "2025-01",
-            "consumption": 1000, "amount_net": 5000, "unit": "кВт·ч",
-            "doc_number": "D-1", "charge_type": "основное",
-            "period_start": "2025-01-01", "period_end": "2025-01-31"}
+    base = {
+        "__row__": 2,
+        "store_id": "S01",
+        "period": "2025-01",
+        "consumption": 1000,
+        "amount_net": 5000,
+        "unit": "кВт·ч",
+        "doc_number": "D-1",
+        "charge_type": "основное",
+        "period_start": "2025-01-01",
+        "period_end": "2025-01-31",
+    }
     base.update(kw)
     return base
 

@@ -11,6 +11,7 @@ def test_very_long_reason():
     cc = load_engine()
     d = cc.reconcile(
         [{"__row__": 2, "store_id": "", "period": "", "consumption": None}],
-        [], [],
+        [],
+        [],
     )[0]
     assert len(d.reason) < 500

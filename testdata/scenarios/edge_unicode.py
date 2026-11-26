@@ -1,5 +1,7 @@
 """Unicode stores."""
+
 from pathlib import Path
+
 import openpyxl
 
 

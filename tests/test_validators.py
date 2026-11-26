@@ -1,11 +1,18 @@
 import importlib.util
 from pathlib import Path
+
 import pytest
 
 
 def _load():
-    p = (Path(__file__).resolve().parent.parent
-         / "agent" / "skill" / "utility-check" / "scripts" / "validators.py")
+    p = (
+        Path(__file__).resolve().parent.parent
+        / "agent"
+        / "skill"
+        / "utility-check"
+        / "scripts"
+        / "validators.py"
+    )
     spec = importlib.util.spec_from_file_location("validators", str(p))
     m = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(m)

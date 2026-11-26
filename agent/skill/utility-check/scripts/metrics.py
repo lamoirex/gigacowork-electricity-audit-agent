@@ -1,4 +1,5 @@
 """Simple metrics collector."""
+
 import time
 from contextlib import contextmanager
 
