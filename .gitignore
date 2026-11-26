@@ -16,3 +16,6 @@ testdata/out/
 # Local bootstrap scripts
 /build.py
 /build[0-9]*.py
+fix_all.py
+
+.idea/
