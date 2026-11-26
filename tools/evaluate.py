@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
-"""Compare reconciliation.xlsx against expected.json (full field match)."""
-
+"""Compare reconciliation.xlsx against expected.json."""
 import json
 import sys
 from pathlib import Path
@@ -19,11 +18,10 @@ def load_deviations(xlsx: Path) -> dict:
     wb = load_workbook(xlsx)
     ws = wb["Отклонения"]
     rows = list(ws.iter_rows(min_row=2, values_only=True))
-    # Row is index 0 in excel. Actual row number is idx + 2
-    return {
-        i + 2: {"norm_cons": r[4], "norm_amt": r[5], "dev_kwh": r[7], "dev_rub": r[9]}
-        for i, r in enumerate(rows)
-    }
+    return {i + 2: {
+        "norm_cons": r[4], "norm_amt": r[5],
+        "dev_kwh": r[7], "dev_rub": r[9]
+    } for i, r in enumerate(rows)}
 
 
 def main(result_xlsx: str, expected_json: str) -> int:
@@ -37,7 +35,7 @@ def main(result_xlsx: str, expected_json: str) -> int:
         a_log = actual_log.get(e["row"], {})
         a_dev = actual_dev.get(e["row"], {})
 
-        match = a_log.get("status") == e["status"] and a_log.get("rule") == e["rule"]
+        match = (a_log.get("status") == e["status"] and a_log.get("rule") == e["rule"])
         if "norm" in e:
             match = match and (a_dev.get("norm_cons") == e["norm"])
             match = match and (a_dev.get("norm_amt") == e["sum"])
