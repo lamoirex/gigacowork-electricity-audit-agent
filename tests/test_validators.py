@@ -13,12 +13,14 @@ def _load():
 
 
 def test_missing_file():
-    with pytest.raises(_load().ValidationError):
-        _load().validate_file(Path("/nope.xlsx"), "charges")
+    m = _load()
+    with pytest.raises(m.ValidationError):
+        m.validate_file(Path("/nope.xlsx"), "charges")
 
 
 def test_wrong_extension(tmp_path):
+    m = _load()
     p = tmp_path / "x.csv"
     p.write_text("")
-    with pytest.raises(_load().ValidationError):
-        _load().validate_file(p, "charges")
+    with pytest.raises(m.ValidationError):
+        m.validate_file(p, "charges")
