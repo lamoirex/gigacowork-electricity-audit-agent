@@ -23,5 +23,16 @@ def test_10_1_percent_is_exceeded():
     assert _decide(1101, 5500).status == "превышение"
 
 
-def test_zero_amount_exceed():
-    assert _decide(1000, 5001).status == "превышение"
+def test_amount_10_percent_is_in_norm():
+    # 5000 * 1.10 = 5500
+    assert _decide(1000, 5500).status == "в норме"
+
+
+def test_amount_11_percent_is_exceeded():
+    # 5000 * 1.11 = 5550
+    assert _decide(1000, 5551).status == "превышение"
+
+
+def test_small_abs_diff_under_threshold_is_in_norm():
+    # 1 руб. из 5000 = 0.02% — норма
+    assert _decide(1000, 5001).status == "в норме"
