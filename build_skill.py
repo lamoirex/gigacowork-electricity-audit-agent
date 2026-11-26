@@ -1,4 +1,5 @@
 """Build dist/agent.zip and dist/testdata.zip."""
+
 import zipfile
 from pathlib import Path
 
