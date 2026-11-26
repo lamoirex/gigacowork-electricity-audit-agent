@@ -67,10 +67,16 @@ def period_key(v: Any) -> str | None:
     s = str(v).strip()
     m = re.match(r"^(\d{4})[-./](\d{1,2})", s)
     if m:
-        return f"{int(m.group(1)):04d}-{int(m.group(2)):02d}"
+        month = int(m.group(2))
+        if not (1 <= month <= 12):
+            return None  # Invalid month like 2025-13
+        return f"{int(m.group(1)):04d}-{month:02d}"
     m = re.match(r"^(\d{1,2})[-./](\d{4})", s)
     if m:
-        return f"{int(m.group(2)):04d}-{int(m.group(1)):02d}"
+        month = int(m.group(1))
+        if not (1 <= month <= 12):
+            return None
+        return f"{int(m.group(2)):04d}-{month:02d}"
     return None
 
 
@@ -100,12 +106,13 @@ def read_table(path: Path, kind: str) -> list[dict]:
     return out
 
 
-def full_month(start: date | None, end: date | None) -> bool:
-    if start is None or end is None:
+def full_month(start: date | None, end: date | None, period: str) -> bool:
+    if start is None or end is None or period is None:
         return False
-    last = calendar.monthrange(end.year, end.month)[1]
-    return (start.day == 1 and end.day == last
-            and (start.year, start.month) == (end.year, end.month))
+    py, pm = int(period[:4]), int(period[5:7])
+    last = calendar.monthrange(py, pm)[1]
+    return (start.year == py and start.month == pm and start.day == 1 and
+            end.year == py and end.month == pm and end.day == last)
 
 
 @dataclass
@@ -135,7 +142,9 @@ def pick_norm(norms: list[dict], store_id: str, period: str) -> dict | None:
                   and period_key(n.get("period")) == period]
     valid = []
     for n in candidates:
-        vf = to_date(n.get("valid_from")) or date(1970, 1, 1)
+        vf = to_date(n.get("valid_from"))
+        if vf is None:
+            continue  # Do not fallback to 1970, skip invalid dates
         if vf <= first:
             valid.append((vf, str(n.get("version") or ""), n))
     if not valid:
@@ -186,9 +195,9 @@ def reconcile(charges: list[dict], norms: list[dict], stores: list[dict]) -> lis
             d.reason = "с нормативом не сравнивается"
             out.append(d); continue
 
-        if not full_month(to_date(r.get("period_start")), to_date(r.get("period_end"))):
+        if not full_month(to_date(r.get("period_start")), to_date(r.get("period_end")), d.period):
             d.rule, d.status = 5, "исключение: неполный месяц"
-            d.reason = "даты периода не покрывают календарный месяц"
+            d.reason = "даты периода не покрывают календарный месяц или не совпадают с ним"
             out.append(d); continue
 
         norm = pick_norm(norms, sid, d.period)
@@ -216,14 +225,19 @@ def reconcile(charges: list[dict], norms: list[dict], stores: list[dict]) -> lis
         d.norm_amount = na
         d.version = norm.get("version") or ""
         d.dev_kwh = round((d.consumption or 0.0) - nk, 3)
-        d.dev_kwh_pct = round(d.dev_kwh / nk * 100, 2) if nk else None
         d.dev_rub = round(d.amount_net - na, 2)
-        d.dev_rub_pct = round(d.dev_rub / na * 100, 2) if na else None
-        exceeded = ((d.dev_kwh_pct is not None and d.dev_kwh_pct > THRESHOLD)
-                    or (d.dev_rub_pct is not None and d.dev_rub_pct > THRESHOLD))
+
+        # Exact threshold comparison without intermediate rounding
+        raw_kwh_pct = (d.dev_kwh / nk * 100) if nk else 0.0
+        raw_rub_pct = (d.dev_rub / na * 100) if na else 0.0
+
+        d.dev_kwh_pct = round(raw_kwh_pct, 2)
+        d.dev_rub_pct = round(raw_rub_pct, 2)
+
+        exceeded = (raw_kwh_pct > THRESHOLD) or (raw_rub_pct > THRESHOLD)
         d.status = "превышение" if exceeded else "в норме"
-        d.reason = (f"факт {d.consumption} vs норматив {nk}; "
-                    f"откл. {d.dev_kwh_pct}% по кВт·ч, {d.dev_rub_pct}% по руб.")
+        d.reason = (f"факт {d.consumption} кВт·ч / {d.amount_net} руб. vs норматив {nk} кВт·ч / {na} руб.; "
+                    f"откл. {d.dev_kwh_pct}% / {d.dev_rub_pct}%")
         out.append(d)
     return out
 
