@@ -374,6 +374,13 @@ def summarize(decisions: list[Decision]) -> dict:
             s["clarifications"] += 1
         if d.status != "в норме":
             reasons[d.status] = reasons.get(d.status, 0) + 1
+    details: dict[str, int] = {}
+    for d in decisions:
+        if d.status == "в норме":
+            continue
+        label = d.reason if d.status == "требуется уточнение" else d.status
+        details[label] = details.get(label, 0) + 1
+    s["reason_counts"] = details
     s["reasons"] = reasons
     return s
 
