@@ -1,4 +1,6 @@
 """Build agent.zip and testdata.zip."""
+import subprocess
+import sys
 import zipfile
 from pathlib import Path
 
@@ -9,6 +11,17 @@ DIST = ROOT / "dist"
 def main():
     DIST.mkdir(parents=True, exist_ok=True)
     
+    # 0. Ensure testdata exists
+    out_dir = ROOT / "testdata" / "out"
+    if not (out_dir / "charges.xlsx").exists():
+        print("Testdata missing, generating...")
+        subprocess.run([sys.executable, "testdata/generate.py"], cwd=ROOT, check=True)
+
+    required = ["charges.xlsx", "norms.xlsx", "stores.xlsx", "expected.json"]
+    for req in required:
+        if not (out_dir / req).exists():
+            raise FileNotFoundError(f"Missing {req} after generation!")
+
     # 1. Skill
     skill_src = ROOT / "agent" / "skill" / "utility-check"
     skill_zip = DIST / "utility-check.zip"
@@ -17,7 +30,7 @@ def main():
             if p.is_file():
                 z.write(p, Path("utility-check") / p.relative_to(skill_src))
 
-    # 2. Agent (skill + prompt + install)
+    # 2. Agent
     agent_zip = DIST / "agent.zip"
     with zipfile.ZipFile(agent_zip, "w", zipfile.ZIP_DEFLATED) as z:
         z.write(skill_zip, "utility-check.zip")
@@ -25,15 +38,15 @@ def main():
         z.write(ROOT / "agent" / "INSTALL.md", "INSTALL.md")
 
     # 3. Testdata
-    testdata_src = ROOT / "testdata"
     testdata_zip = DIST / "testdata.zip"
     with zipfile.ZipFile(testdata_zip, "w", zipfile.ZIP_DEFLATED) as z:
-        z.write(testdata_src / "generate.py", "generate.py")
-        for p in (testdata_src / "out").glob("*"):
+        z.write(ROOT / "testdata" / "generate.py", "generate.py")
+        for p in out_dir.glob("*"):
             if p.is_file():
                 z.write(p, p.name)
-        if (testdata_src / "scenarios").exists():
-            for p in (testdata_src / "scenarios").glob("*.py"):
+        scenarios = ROOT / "testdata" / "scenarios"
+        if scenarios.exists():
+            for p in scenarios.glob("*.py"):
                 z.write(p, f"scenarios/{p.name}")
 
     print("Built:")
