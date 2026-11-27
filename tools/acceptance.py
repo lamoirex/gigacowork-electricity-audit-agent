@@ -63,8 +63,17 @@ def execute(offline, session, out, replay_revision=None):
     local = json.loads((control / "metrics.json").read_text())
     runs = []
     ok = True
+    baseline = INPUTS
+    if replay_revision:
+        baseline = out / "baseline-inputs"
+        baseline.mkdir(parents=True, exist_ok=True)
+        archive = session / "result" / "testdata.zip"
+        with ZipFile(archive) as saved:
+            for name in ("charges.xlsx", "norms.xlsx", "stores.xlsx", "expected.json"):
+                (baseline / name).write_bytes(saved.read(name))
+
     for name, folder, suffix, oracle in [
-        ("base", INPUTS, "", INPUTS / "expected.json"),
+        ("base", baseline, "", baseline / "expected.json"),
         ("foreign", INPUTS / "foreign", "_foreign", control / "expected_foreign.json"),
         ("extended", INPUTS / "extended", "", INPUTS / "extended/expected.json"),
     ]:
