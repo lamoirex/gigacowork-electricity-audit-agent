@@ -49,6 +49,7 @@ def workbook_signature(path, rows, exceptions):
 
 def main():
     generate(ROOT / "testdata/generate.py")
+    generate(ROOT / "testdata/generate_extended.py")
     generate(ROOT / "testdata/scenarios/foreign_format.py")
     (ROOT / "runs").mkdir(exist_ok=True)
     output = Path(mkdtemp(prefix="control-", dir=ROOT / "runs"))
@@ -65,6 +66,7 @@ def main():
     datasets = (
         ("base", INPUTS, "", INPUTS / "expected.json"),
         ("foreign", INPUTS / "foreign", "_foreign", foreign_oracle),
+        ("extended", INPUTS / "extended", "", INPUTS / "extended" / "expected.json"),
     )
     report = {}
     passed = True
