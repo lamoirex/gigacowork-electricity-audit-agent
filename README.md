@@ -25,7 +25,7 @@ python3 agent/skill/utility-check/scripts/check_charges.py \
 python3 tools/evaluate.py result/reconciliation.xlsx testdata/out/expected.json
 ```
 
-Скрипту можно передать файлы в любом порядке или папку с ними. Роль каждого файла определяется по заголовкам, имена файлов и листов не важны.
+Передайте три файла в порядке: начисления, нормативы, справочник магазинов. Скрипт ищет заголовки в первой строке активного листа.
 
 ## Как пользоваться в GigaCowork
 

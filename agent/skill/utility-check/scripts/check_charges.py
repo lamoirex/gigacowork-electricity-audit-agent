@@ -90,14 +90,22 @@ def find_col(headers: list, synonyms: list) -> int | None:
     return None
 
 
-def read_table(path: Path, kind: str) -> list[dict]:
+def read_table(path: Path, kind: str, *, validate_headers: bool = False) -> list[dict]:
     wb = openpyxl.load_workbook(path, data_only=True)
     ws = wb.active
     rows = list(ws.iter_rows(values_only=True))
-    if not rows:
-        return []
-    headers = rows[0]
+    wb.close()
+    headers = rows[0] if rows else ()
     idx = {k: find_col(headers, v) for k, v in SYN[kind].items()}
+    if validate_headers:
+        required = {
+            "charges": SYN["charges"].keys(),
+            "norms": SYN["norms"].keys(),
+            "stores": ("store_id",),
+        }
+        missing = [SYN[kind][key][0] for key in required[kind] if idx[key] is None]
+        if missing:
+            raise ValueError(f"{path.name}: нет обязательных колонок: {', '.join(missing)}")
     out = []
     for i, r in enumerate(rows[1:], start=2):
         rec = {"__row__": i}
@@ -360,9 +368,12 @@ def main(argv: list[str]) -> int:
     ap.add_argument("stores")
     ap.add_argument("out_dir")
     a = ap.parse_args(argv)
-    charges = read_table(Path(a.charges), "charges")
-    norms = read_table(Path(a.norms), "norms")
-    stores = read_table(Path(a.stores), "stores")
+    try:
+        charges = read_table(Path(a.charges), "charges", validate_headers=True)
+        norms = read_table(Path(a.norms), "norms", validate_headers=True)
+        stores = read_table(Path(a.stores), "stores", validate_headers=True)
+    except ValueError as exc:
+        ap.error(f"{exc}. Порядок файлов: начисления, нормативы, справочник.")
     decisions = reconcile(charges, norms, stores)
     out = Path(a.out_dir)
     out.mkdir(parents=True, exist_ok=True)
