@@ -91,28 +91,43 @@ def find_col(headers: list, synonyms: list) -> int | None:
 
 
 def read_table(path: Path, kind: str, *, validate_headers: bool = False) -> list[dict]:
-    wb = openpyxl.load_workbook(path, data_only=True)
-    ws = wb.active
-    rows = list(ws.iter_rows(values_only=True))
-    wb.close()
-    headers = rows[0] if rows else ()
-    idx = {k: find_col(headers, v) for k, v in SYN[kind].items()}
-    if validate_headers:
-        required = {
-            "charges": SYN["charges"].keys(),
-            "norms": SYN["norms"].keys(),
-            "stores": ("store_id",),
-        }
-        missing = [SYN[kind][key][0] for key in required[kind] if idx[key] is None]
-        if missing:
+    required = ("store_id",) if kind == "stores" else tuple(SYN[kind])
+    best = None
+    matches = []
+    wb = openpyxl.load_workbook(path, read_only=True, data_only=True)
+    try:
+        for sheet in wb.worksheets:
+            for number, cells in enumerate(sheet.values, 1):
+                idx = {k: find_col(cells, aliases) for k, aliases in SYN[kind].items()}
+                score = sum(idx[k] is not None for k in required)
+                candidate = (score, sheet, number, idx)
+                if best is None or score > best[0]:
+                    best = candidate
+                if score == len(required):
+                    matches.append(candidate)
+                    break
+        if len(matches) > 1:
+            names = ", ".join(sheet.title for _, sheet, _, _ in matches)
+            raise ValueError(f"{path.name}: несколько подходящих листов: {names}")
+        if not matches and validate_headers:
+            missing = [SYN[kind][k][0] for k in required if not best or best[3][k] is None]
             raise ValueError(f"{path.name}: нет обязательных колонок: {', '.join(missing)}")
-    out = []
-    for i, r in enumerate(rows[1:], start=2):
-        rec = {"__row__": i}
-        for k, j in idx.items():
-            rec[k] = r[j] if (j is not None and j < len(r)) else None
-        out.append(rec)
-    return out
+        if best is None:
+            return []
+        _, sheet, number, idx = matches[0] if matches else best
+        records = []
+        rows = sheet.iter_rows(min_row=number + 1, values_only=True)
+        for row_number, values in enumerate(rows, number + 1):
+            if all(value is None for value in values):
+                continue
+            record = {
+                k: values[j] if j is not None and j < len(values) else None for k, j in idx.items()
+            }
+            record["__row__"] = row_number
+            records.append(record)
+        return records
+    finally:
+        wb.close()
 
 
 def full_month(start: date | None, end: date | None, period: str) -> bool:
@@ -163,7 +178,9 @@ def pick_norm(norms: list[dict], store_id: str, period: str) -> dict | None:
         if vf is None:
             continue
         if vf <= first:
-            valid.append((vf, str(n.get("version") or ""), n))
+            version = str(n.get("version") or "")
+            rank = (1, int(version)) if version.isdecimal() else (0, version)
+            valid.append((vf, rank, n))
     if not valid:
         return None
     valid.sort(key=lambda t: (t[0], t[1]))
@@ -231,7 +248,7 @@ def reconcile(charges: list[dict], norms: list[dict], stores: list[dict]) -> lis
 
         u = str(r.get("unit") or "").strip().lower()
         nu = str(norm.get("norm_unit") or "").strip().lower()
-        if not u or not nu or u not in ALLOWED_UNITS or u != nu:
+        if not u or not nu or u not in ALLOWED_UNITS or nu not in ALLOWED_UNITS:
             d.rule, d.status = 7, "требуется уточнение"
             d.reason = f"несовпадение единиц: {u!r} vs {nu!r}"
             out.append(d)
@@ -379,6 +396,10 @@ def main(argv: list[str]) -> int:
     out.mkdir(parents=True, exist_ok=True)
     xlsx = write_output(decisions, out)
     summary = summarize(decisions)
+    summary["notification"] = (
+        f"Просьба проверить превышения ({summary['exceeded']}), "
+        f"исключения ({summary['exceptions']}) и строки для уточнения ({summary['clarifications']})."
+    )
     summary["xlsx"] = str(xlsx)
     print(json.dumps(summary, ensure_ascii=False, indent=2))
     return 0
