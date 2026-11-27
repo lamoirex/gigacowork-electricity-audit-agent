@@ -244,8 +244,8 @@ def reconcile(charges: list[dict], norms: list[dict], stores: list[dict]) -> lis
         d.dev_kwh = round((d.consumption or 0.0) - nk, 3)
         d.dev_rub = round(d.amount_net - na, 2)
 
-        raw_kwh_pct = (d.dev_kwh / nk * 100) if nk else 0.0
-        raw_rub_pct = (d.dev_rub / na * 100) if na else 0.0
+        raw_kwh_pct = (d.dev_kwh / nk * 100) if nk else (100.0 if d.dev_kwh > 0 else 0.0)
+        raw_rub_pct = (d.dev_rub / na * 100) if na else (100.0 if d.dev_rub > 0 else 0.0)
 
         d.dev_kwh_pct = round(raw_kwh_pct, 2)
         d.dev_rub_pct = round(raw_rub_pct, 2)

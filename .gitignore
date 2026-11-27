@@ -14,7 +14,7 @@ testdata/out/
 /build[0-9]*.py
 
 # Local bootstrap scripts
-fix_v6.py
+fix_v7.py
 
 .idea/
 
