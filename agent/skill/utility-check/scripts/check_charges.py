@@ -244,18 +244,32 @@ def reconcile(charges: list[dict], norms: list[dict], stores: list[dict]) -> lis
         d.dev_kwh = round((d.consumption or 0.0) - nk, 3)
         d.dev_rub = round(d.amount_net - na, 2)
 
-        raw_kwh_pct = (d.dev_kwh / nk * 100) if nk else (100.0 if d.dev_kwh > 0 else 0.0)
-        raw_rub_pct = (d.dev_rub / na * 100) if na else (100.0 if d.dev_rub > 0 else 0.0)
-
-        d.dev_kwh_pct = round(raw_kwh_pct, 2)
-        d.dev_rub_pct = round(raw_rub_pct, 2)
-
-        exceeded = (raw_kwh_pct > THRESHOLD) or (raw_rub_pct > THRESHOLD)
+                if nk > 0:
+            raw_kwh_pct = (d.dev_kwh / nk) * 100
+            d.dev_kwh_pct = round(raw_kwh_pct, 2)
+            exceeded_kwh = raw_kwh_pct > THRESHOLD
+            pct_kwh_str = f"{d.dev_kwh_pct}%"
+        else:
+            d.dev_kwh_pct = None
+            exceeded_kwh = d.dev_kwh > 0
+            pct_kwh_str = "н/д"
+            
+        if na > 0:
+            raw_rub_pct = (d.dev_rub / na) * 100
+            d.dev_rub_pct = round(raw_rub_pct, 2)
+            exceeded_rub = raw_rub_pct > THRESHOLD
+            pct_rub_str = f"{d.dev_rub_pct}%"
+        else:
+            d.dev_rub_pct = None
+            exceeded_rub = d.dev_rub > 0
+            pct_rub_str = "н/д"
+            
+        exceeded = exceeded_kwh or exceeded_rub
         d.status = "превышение" if exceeded else "в норме"
-        d.reason = (
-            f"факт {d.consumption} кВт·ч / {d.amount_net} руб. vs норматив {nk} кВт·ч / {na} руб.; "
-            f"откл. {d.dev_kwh_pct}% / {d.dev_rub_pct}%"
-        )
+        reason = f"факт {d.consumption} кВт·ч / {d.amount_net} руб. vs норматив {nk} кВт·ч / {na} руб.; откл. {pct_kwh_str} / {pct_rub_str}"
+        if nk == 0 or na == 0:
+            reason += " (Факт положительный при нулевом нормативе)"
+        d.reason = reason
         out.append(d)
     return out
 
