@@ -42,13 +42,8 @@ def main():
     testdata_zip = DIST / "testdata.zip"
     with zipfile.ZipFile(testdata_zip, "w", zipfile.ZIP_DEFLATED) as z:
         z.write(ROOT / "testdata" / "generate.py", "generate.py")
-        for p in out_dir.glob("*"):
-            if p.is_file():
-                z.write(p, p.name)
-        scenarios = ROOT / "testdata" / "scenarios"
-        if scenarios.exists():
-            for p in scenarios.glob("*.py"):
-                z.write(p, f"scenarios/{p.name}")
+        for name in required:
+            z.write(out_dir / name, name)
 
     print("Built:")
     for f in DIST.glob("*.zip"):
