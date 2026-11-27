@@ -1,5 +1,4 @@
 """Build agent.zip and testdata.zip."""
-
 import subprocess
 import sys
 import zipfile
@@ -11,7 +10,7 @@ DIST = ROOT / "dist"
 
 def main():
     DIST.mkdir(parents=True, exist_ok=True)
-
+    
     # 0. Ensure testdata exists
     out_dir = ROOT / "testdata" / "out"
     if not (out_dir / "charges.xlsx").exists():
@@ -28,7 +27,7 @@ def main():
     skill_zip = DIST / "utility-check.zip"
     with zipfile.ZipFile(skill_zip, "w", zipfile.ZIP_DEFLATED) as z:
         for p in skill_src.rglob("*"):
-            if p.is_file():
+            if p.is_file() and "__pycache__" not in p.parts and not p.name.endswith(".pyc"):
                 z.write(p, Path("utility-check") / p.relative_to(skill_src))
 
     # 2. Agent
