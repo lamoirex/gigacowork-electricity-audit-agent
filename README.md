@@ -57,7 +57,7 @@ agent/
   INSTALL.md                         установка и запуск
   skill/utility-check/               навык в формате GigaCowork
     SKILL.md                         когда применять, как запустить, как ответить
-    scripts/                         Python 3 (stdlib, openpyxl)
+    scripts/                         Python 3 (stdlib, openpyxl, xlrd)
     references/                      параметры правил (порог, синонимы)
 docs/
   customer_questions.md              вопросы заказчику

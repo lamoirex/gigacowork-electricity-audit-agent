@@ -90,11 +90,40 @@ def find_col(headers: list, synonyms: list) -> int | None:
     return None
 
 
+def load_input_book(path: Path):
+    if path.suffix.lower() != ".xls":
+        return openpyxl.load_workbook(path, read_only=True, data_only=True)
+
+    import xlrd
+
+    source = xlrd.open_workbook(str(path), on_demand=True)
+    book = Workbook()
+    book.remove(book.active)
+    try:
+        for sheet in source.sheets():
+            output = book.create_sheet(sheet.name)
+            for number in range(sheet.nrows):
+                values = []
+                for cell in sheet.row(number):
+                    value = cell.value
+                    if cell.ctype == xlrd.XL_CELL_DATE:
+                        value = xlrd.xldate_as_datetime(value, source.datemode)
+                    elif cell.ctype in (xlrd.XL_CELL_EMPTY, xlrd.XL_CELL_BLANK, xlrd.XL_CELL_ERROR):
+                        value = None
+                    elif cell.ctype == xlrd.XL_CELL_NUMBER and value.is_integer():
+                        value = int(value)
+                    values.append(value)
+                output.append(values)
+    finally:
+        source.release_resources()
+    return book
+
+
 def read_table(path: Path, kind: str, *, validate_headers: bool = False) -> list[dict]:
     required = ("store_id",) if kind == "stores" else tuple(SYN[kind])
     best = None
     matches = []
-    wb = openpyxl.load_workbook(path, read_only=True, data_only=True)
+    wb = load_input_book(path)
     try:
         for sheet in wb.worksheets:
             for number, cells in enumerate(sheet.values, 1):
@@ -405,7 +434,8 @@ def main(argv: list[str]) -> int:
     summary = summarize(decisions)
     summary["notification"] = (
         f"Просьба проверить превышения ({summary['exceeded']}), "
-        f"исключения ({summary['exceptions']}) и строки для уточнения ({summary['clarifications']})."
+        f"исключения ({summary['exceptions']}) "
+        f"и строки для уточнения ({summary['clarifications']})."
     )
     summary["xlsx"] = str(xlsx)
     print(json.dumps(summary, ensure_ascii=False, indent=2))
