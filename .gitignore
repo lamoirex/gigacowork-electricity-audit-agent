@@ -13,9 +13,8 @@ testdata/out/
 /build.py
 /build[0-9]*.py
 
-# Local bootstrap scripts
-fix_v9.py
-
 .idea/
+
+fix_report.py
 
 /submission/
