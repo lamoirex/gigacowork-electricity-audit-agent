@@ -114,6 +114,14 @@ def render(root, target, runs):
         + ". Модель: "
         + ", ".join(sorted({r.get("model") or "не использовалась" for r in runs}))
     )
+    if "replay_revision" in runs[0]:
+        original = sum(r["original_chat_ok"] for r in runs)
+        current = sum(r["chat_ok"] for r in runs)
+        para(
+            f"Повторная оценка тех же ответов GigaChat. Исходный валидатор: "
+            f"{original}/{len(runs)}. После допуска переносов между счётчиками: "
+            f"{current}/{len(runs)}. Время взято из первоначальных запусков API."
+        )
     rows = [["Набор", "№", "Строки", "Подстановки", "Форма", "Время, с", "Чат"]]
     for r in runs:
         m = r["fields"]

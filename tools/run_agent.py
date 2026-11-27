@@ -8,8 +8,9 @@ import sys
 from pathlib import Path
 from time import perf_counter
 
-from check_gigachat import LABELS, verify_answer
+from check_gigachat import LABELS
 from gigachat import GigaChat
+from summary_layout import matches_summary
 
 ROOT = Path(__file__).resolve().parents[1]
 SKILL = ROOT / "agent/skill/utility-check/scripts/check_charges.py"
@@ -63,8 +64,7 @@ def run_agent(files, target):
         total_seconds=round(elapsed, 3),
         summary=summary,
         answer=answer,
-        chat_ok=verify_answer(answer, first)
-        and " ".join(template.split()) == " ".join(answer.split()),
+        chat_ok=matches_summary(answer, template),
     )
     (target / "agent.json").write_text(
         json.dumps(record, ensure_ascii=False, indent=2), encoding="utf-8"

@@ -20,7 +20,38 @@ def python(*args):
     return subprocess.check_output([sys.executable, *map(str, args)], cwd=ROOT, text=True)
 
 
-def execute(offline, session, out):
+def replay_record(dest, files, oracle, original_revision):
+    """Read the original API evidence and verify its input fingerprint."""
+    from check_gigachat import LABELS
+    from summary_layout import matches_summary
+
+    original_runner = subprocess.check_output(
+        ["git", "show", f"{original_revision}:tools/run_agent.py"], cwd=ROOT
+    )
+    digest = hashlib.sha256()
+    for path in [*files, oracle, CLI]:
+        digest.update(path.read_bytes())
+    digest.update(original_runner)
+    if digest.hexdigest() != (dest / "inputs.sha256").read_text().strip():
+        raise ValueError(f"Исходные данные или версия скрипта изменились: {dest}")
+
+    record = json.loads((dest / "agent.json").read_text())
+    answer = (dest / "response.txt").read_text()
+    if answer != record["answer"]:
+        raise ValueError(f"Сохранённый ответ отличается от agent.json: {dest}")
+
+    summary = record["summary"]
+    first = " | ".join(f"{label}: {summary[key]}" for key, label in LABELS)
+    reasons = ", ".join(f"{label} ({count})" for label, count in summary["reason_counts"].items())
+    template = f"{first}\nПричины: {reasons or 'нет'}.\nУведомление: {summary['notification']}"
+    return {
+        **record,
+        "original_chat_ok": record["chat_ok"],
+        "chat_ok": matches_summary(answer, template),
+    }
+
+
+def execute(offline, session, out, replay_revision=None):
     session.mkdir(parents=True, exist_ok=True)
     mode = "Python CLI" if offline else "Python + GigaChat API"
     pointer = session / "control.txt"
@@ -60,7 +91,11 @@ def execute(offline, session, out):
                     )
                 ).hexdigest()
                 stamp = dest / "inputs.sha256"
-                if cache.exists() and stamp.exists() and stamp.read_text() == fingerprint:
+                if replay_revision:
+                    record = replay_record(dest, files, oracle, replay_revision)
+                    result["original_chat_ok"] = record["original_chat_ok"]
+                    result["replay_revision"] = replay_revision
+                elif cache.exists() and stamp.exists() and stamp.read_text() == fingerprint:
                     record = json.loads(cache.read_text())
                 else:
                     record = run_agent(files, dest)
@@ -130,7 +165,10 @@ if __name__ == "__main__":
     parser.add_argument("--offline", action="store_true")
     parser.add_argument("--session", type=Path)
     parser.add_argument("--output", type=Path, default=ROOT / "submission")
+    parser.add_argument("--replay-revision", help="Версия исходного API-прогона")
     args = parser.parse_args()
+    if args.replay_revision and (args.offline or args.session is None):
+        parser.error("--replay-revision требует --session и режима API")
     (ROOT / "runs").mkdir(exist_ok=True)
     session = args.session or Path(mkdtemp(prefix="acceptance-", dir=ROOT / "runs"))
-    sys.exit(execute(args.offline, session, args.output))
+    sys.exit(execute(args.offline, session, args.output, args.replay_revision))
