@@ -1,4 +1,5 @@
 """Build agent.zip and testdata.zip."""
+
 import subprocess
 import sys
 import zipfile
@@ -10,7 +11,7 @@ DIST = ROOT / "dist"
 
 def main():
     DIST.mkdir(parents=True, exist_ok=True)
-    
+
     # 0. Ensure testdata exists
     out_dir = ROOT / "testdata" / "out"
     if not (out_dir / "charges.xlsx").exists():
