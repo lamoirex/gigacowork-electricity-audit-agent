@@ -715,6 +715,16 @@ def main():
             "dev_rub": 0,
         },
     ]
+    # Для строки 2 ожидается вторая версия норматива S01 за январь.
+    for item in expected:
+        if "norm" not in item:
+            continue
+        item["version"] = 2 if item["row"] == 2 else 1
+        item["dev_kwh_pct"] = (
+            round(item["dev_kwh"] * 100 / item["norm"], 2) if item["norm"] else None
+        )
+        item["dev_rub_pct"] = round(item["dev_rub"] * 100 / item["sum"], 2) if item["sum"] else None
+
     (out / "expected.json").write_text(
         json.dumps(expected, ensure_ascii=False, indent=2), encoding="utf-8"
     )

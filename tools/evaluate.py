@@ -44,16 +44,22 @@ def main(result_xlsx: str, expected_json: str) -> int:
         a_log = actual_log.get(e["row"], {})
         a_dev = actual_dev.get(e["row"], {})
 
-        match = a_log.get("status") == e["status"] and a_log.get("rule") == e["rule"]
+        match = (
+            e["row"] in actual_dev
+            and a_log.get("status") == e["status"]
+            and a_log.get("rule") == e["rule"]
+        )
 
         if "norm" in e:
             match = match and (a_dev.get("norm_cons") == e["norm"])
             match = match and (a_dev.get("norm_amt") == e["sum"])
             match = match and (a_dev.get("dev_kwh") == e["dev_kwh"])
             match = match and (a_dev.get("dev_rub") == e["dev_rub"])
-            if "dev_kwh_pct" in e:
-                match = match and (a_dev.get("dev_kwh_pct") == e["dev_kwh_pct"])
-                match = match and (a_dev.get("dev_rub_pct") == e["dev_rub_pct"])
+            for field in ("version", "dev_kwh_pct", "dev_rub_pct"):
+                if field not in e:
+                    print(f"Строка {e['row']}: в эталоне отсутствует {field}. Пересоздайте эталон.")
+                    return 2
+                match = match and (a_dev.get(field) == e[field])
         else:
             # Check that all calculation fields are empty
             for k in [
