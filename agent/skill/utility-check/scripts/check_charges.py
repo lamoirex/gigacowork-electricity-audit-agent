@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 """Deterministic reconciliation of utility charges against norms."""
-
 from __future__ import annotations
 
 import argparse
@@ -112,14 +111,8 @@ def full_month(start: date | None, end: date | None, period: str) -> bool:
         return False
     py, pm = int(period[:4]), int(period[5:7])
     last = calendar.monthrange(py, pm)[1]
-    return (
-        start.year == py
-        and start.month == pm
-        and start.day == 1
-        and end.year == py
-        and end.month == pm
-        and end.day == last
-    )
+    return (start.year == py and start.month == pm and start.day == 1 and
+            end.year == py and end.month == pm and end.day == last)
 
 
 @dataclass
@@ -144,11 +137,9 @@ class Decision:
 def pick_norm(norms: list[dict], store_id: str, period: str) -> dict | None:
     py, pm = int(period[:4]), int(period[5:7])
     first = date(py, pm, 1)
-    candidates = [
-        n
-        for n in norms
-        if norm_id(n.get("store_id")) == store_id and period_key(n.get("period")) == period
-    ]
+    candidates = [n for n in norms
+                  if norm_id(n.get("store_id")) == store_id
+                  and period_key(n.get("period")) == period]
     valid = []
     for n in candidates:
         vf = to_date(n.get("valid_from"))
@@ -243,7 +234,7 @@ def reconcile(charges: list[dict], norms: list[dict], stores: list[dict]) -> lis
         d.version = norm.get("version") or ""
         d.dev_kwh = round((d.consumption or 0.0) - nk, 3)
         d.dev_rub = round(d.amount_net - na, 2)
-
+        
         if nk > 0:
             raw_kwh_pct = (d.dev_kwh / nk) * 100
             d.dev_kwh_pct = round(raw_kwh_pct, 2)
@@ -253,7 +244,7 @@ def reconcile(charges: list[dict], norms: list[dict], stores: list[dict]) -> lis
             d.dev_kwh_pct = None
             exceeded_kwh = d.dev_kwh > 0
             pct_kwh_str = "н/д"
-
+            
         if na > 0:
             raw_rub_pct = (d.dev_rub / na) * 100
             d.dev_rub_pct = round(raw_rub_pct, 2)
@@ -263,11 +254,14 @@ def reconcile(charges: list[dict], norms: list[dict], stores: list[dict]) -> lis
             d.dev_rub_pct = None
             exceeded_rub = d.dev_rub > 0
             pct_rub_str = "н/д"
-
+            
         exceeded = exceeded_kwh or exceeded_rub
         d.status = "превышение" if exceeded else "в норме"
-
-        reason = f"факт {d.consumption} кВт·ч / {d.amount_net} руб. vs норматив {nk} кВт·ч / {na} руб.; откл. {pct_kwh_str} / {pct_rub_str}"
+        
+        reason = (
+            f"факт {d.consumption} кВт·ч / {d.amount_net} руб. vs норматив "
+            f"{nk} кВт·ч / {na} руб.; откл. {pct_kwh_str} / {pct_rub_str}"
+        )
         if nk == 0 or na == 0:
             reason += " (Факт положительный при нулевом нормативе)"
         d.reason = reason
@@ -279,41 +273,17 @@ def write_output(decisions: list[Decision], out_dir: Path) -> Path:
     wb = Workbook()
     ws = wb.active
     ws.title = "Отклонения"
-    ws.append(
-        [
-            "ID магазина",
-            "Период",
-            "Потребление, кВт·ч",
-            "Начислено без НДС, руб.",
-            "Норматив, кВт·ч",
-            "Норматив, руб.",
-            "Версия норматива",
-            "Отклонение, кВт·ч",
-            "Отклонение, % (кВт·ч)",
-            "Отклонение, руб.",
-            "Отклонение, % (руб.)",
-            "Статус",
-            "Обоснование",
-        ]
-    )
+    ws.append([
+        "ID магазина", "Период", "Потребление, кВт·ч", "Начислено без НДС, руб.",
+        "Норматив, кВт·ч", "Норматив, руб.", "Версия норматива",
+        "Отклонение, кВт·ч", "Отклонение, % (кВт·ч)", "Отклонение, руб.",
+        "Отклонение, % (руб.)", "Статус", "Обоснование",
+    ])
     for d in decisions:
-        ws.append(
-            [
-                d.store_id,
-                d.period,
-                d.consumption,
-                d.amount_net,
-                d.norm_consumption,
-                d.norm_amount,
-                d.version,
-                d.dev_kwh,
-                d.dev_kwh_pct,
-                d.dev_rub,
-                d.dev_rub_pct,
-                d.status,
-                d.reason,
-            ]
-        )
+        ws.append([d.store_id, d.period, d.consumption, d.amount_net,
+                   d.norm_consumption, d.norm_amount, d.version,
+                   d.dev_kwh, d.dev_kwh_pct, d.dev_rub, d.dev_rub_pct,
+                   d.status, d.reason])
 
     we = wb.create_sheet("Реестр исключений")
     we.append(["Строка", "ID магазина", "Период", "Статус", "Причина", "Действие"])
@@ -333,7 +303,8 @@ def write_output(decisions: list[Decision], out_dir: Path) -> Path:
 
 
 def summarize(decisions: list[Decision]) -> dict:
-    s = {"checked": len(decisions), "exceeded": 0, "ok": 0, "exceptions": 0, "clarifications": 0}
+    s = {"checked": len(decisions), "exceeded": 0, "ok": 0,
+         "exceptions": 0, "clarifications": 0}
     reasons: dict[str, int] = {}
     for d in decisions:
         if d.status == "превышение":
