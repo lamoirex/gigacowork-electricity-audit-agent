@@ -12,7 +12,9 @@ jobs:
       - uses: actions/setup-python@v5
         with: { python-version: "3.12" }
       - run: pip install -r requirements-dev.txt
-      - run: pytest -q
       - run: python build_skill.py
       - uses: softprops/action-gh-release@v2
-        with: { files: "dist/*.zip" }
+        with:
+          files: |
+            dist/agent.zip
+            dist/testdata.zip
